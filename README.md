@@ -20,7 +20,9 @@ Result of the proportion of choices during testing with the probability of ordin
 ## Reference
 
 .[1] Why Contextual Preference Reversals Maximize Expected Value 
+
 (http://www-personal.umich.edu/~rickl/pubs/howes-et-al-2016-psyrev.pdf)
 
 .[2] The Effect of Expected Value on Attraction Effect Preference Reversals 
+
 (http://onlinelibrary.wiley.com/doi/10.1002/bdm.2001/full)

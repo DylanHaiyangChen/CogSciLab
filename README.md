@@ -3,21 +3,17 @@ Explore human decision making with Artificial Intelligence approach
 
 ## Introduction
 
-There is a very interesting phenomenon that people's preference changed by adding a third alternative. It has been a evidence to against the opinion that hunman decision making is irrational. However, recent study [1], [2] show that hunman decision making is optimal. In this project, we will try to underly information processing mechanisms in the human decision making task and find the way to help people make better dicisions.
+There is a very interesting phenomenon that people's preference changed by adding a third alternative. It has been a evidence to against the opinion that human decision making is irrational. However, recent study [1], [2] show that human decision making is optimal. In this project, we will try to underlie information processing mechanisms in the human decision making task and find the way to help people make better decisions.
 
 ## Result
+The distribution of probability is the distribution with parameters (a = 1, b = 1) and the distribution of value is the t distribution with parameters (location = 19.60, scale = 8.08, and df = 100).
 
 Result of the proportion of choices during testing with the probability of ordinal error from 0.0 to 1.0
 
-![result](Result/Probability of ordinal error DA.png)
-
-![model](Result/Probability of ordinal error DA.png)
-
-![model](Result/Probability of ordinal error 0.5_1.0DA.png)
-
-![model](Result/Probability of ordinal error DB.png)
-
-![model](Result/Probability of ordinal error 0.5_1.0DB.png)
+![result](Result/Probability_of_ordinal_error_DA.png)
+![result](Result/Probability_of_ordinal_error_DB.png)
+![result](Result/Probability_of_ordinal_error_0.5_1.0DA.png)
+![result](Result/Probability_of_ordinal_error_0.5_1.0DB.png)
 
 ## Reference
 

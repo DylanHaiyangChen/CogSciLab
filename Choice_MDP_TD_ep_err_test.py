@@ -361,64 +361,76 @@ def Env_calculate_transition_prob(i_sample, current_s, action, ordinal_error,
     #tolerance_v = 8.8
     tolerance_v = 1.1
     #tolerance_v = 0.1
-    reward = int(0)
     value_new_state = np.array(value_state[current_s])
     value_e_a = value_p_a * value_v_a
     value_e_b = value_p_b * value_v_b
     value_e_d = value_p_d * value_v_d
     
-    ordinal_probs = np.ones(3) * ordinal_error / 2
+    ordinal_probs = np.array([ordinal_error, 1 - ordinal_error])
     ordinal_obs = np.array([1, 2, 3])
+    is_correct = np.random.choice(np.array([0, 1]), p=ordinal_probs)
     if action == space_action[0]:
-        if (value_p_a[i_sample] > value_p_b[i_sample] + tolerance_p):
-            ordinal_probs[0] = 1.0 - ordinal_error       
-        elif (value_p_a[i_sample] < value_p_b[i_sample] + tolerance_p) and (value_p_a[i_sample] > value_p_b[i_sample] - tolerance_p):
-            ordinal_probs[1] = 1.0 - ordinal_error
+        if is_correct == 0:
+            value_new_state[0] = np.random.choice(ordinal_obs)
         else:
-            ordinal_probs[2] = 1.0 - ordinal_error
-        value_new_state[0] = np.random.choice(ordinal_obs, p=ordinal_probs)
+            if (value_p_a[i_sample] > value_p_b[i_sample] + tolerance_p):
+                value_new_state[0] = 1
+            elif (value_p_a[i_sample] < value_p_b[i_sample] + tolerance_p) and (value_p_a[i_sample] > value_p_b[i_sample] - tolerance_p):
+                value_new_state[0] = 2
+            else:
+                value_new_state[0] = 3
     elif action == space_action[1]:
-        if (value_p_a[i_sample] > value_p_d[i_sample] + tolerance_p):
-            ordinal_probs[0] = 1.0 - ordinal_error
-        elif (value_p_a[i_sample] < value_p_d[i_sample] + tolerance_p) and (value_p_a[i_sample] > value_p_d[i_sample] - tolerance_p):
-            ordinal_probs[1] = 1.0 - ordinal_error
+        if is_correct == 0:
+            value_new_state[1] = np.random.choice(ordinal_obs)
         else:
-            ordinal_probs[2] = 1.0 - ordinal_error
-        value_new_state[1] = np.random.choice(ordinal_obs, p=ordinal_probs)
+            if (value_p_a[i_sample] > value_p_d[i_sample] + tolerance_p):
+                value_new_state[1] = 1
+            elif (value_p_a[i_sample] < value_p_d[i_sample] + tolerance_p) and (value_p_a[i_sample] > value_p_d[i_sample] - tolerance_p):
+                value_new_state[1] = 2
+            else:
+                value_new_state[1] = 3
     elif action == space_action[2]:
-        if (value_p_b[i_sample] > value_p_d[i_sample] + tolerance_p):
-            ordinal_probs[0] = 1.0 - ordinal_error
-        elif (value_p_b[i_sample] < value_p_d[i_sample] + tolerance_p) and (value_p_b[i_sample] > value_p_d[i_sample] - tolerance_p):
-            ordinal_probs[1] = 1.0 - ordinal_error
+        if is_correct == 0:
+            value_new_state[2] = np.random.choice(ordinal_obs)
         else:
-            ordinal_probs[2] = 1.0 - ordinal_error
-        value_new_state[2] = np.random.choice(ordinal_obs, p=ordinal_probs)
+            if (value_p_b[i_sample] > value_p_d[i_sample] + tolerance_p):
+                value_new_state[2] = 1
+            elif (value_p_b[i_sample] < value_p_d[i_sample] + tolerance_p) and (value_p_b[i_sample] > value_p_d[i_sample] - tolerance_p):
+                value_new_state[2] = 2
+            else:
+                value_new_state[2] = 3
     elif action == space_action[3]:
-        if (value_v_a[i_sample] > value_v_b[i_sample] + tolerance_v):
-            ordinal_probs[0] = 1.0 - ordinal_error
-        elif (value_v_a[i_sample] < value_v_b[i_sample] + tolerance_v) and (value_v_a[i_sample] > value_v_b[i_sample] - tolerance_v):
-            ordinal_probs[1] = 1.0 - ordinal_error
+        if is_correct == 0:
+            value_new_state[3] = np.random.choice(ordinal_obs)
         else:
-            ordinal_probs[2] = 1.0 - ordinal_error
-        value_new_state[3] = np.random.choice(ordinal_obs, p=ordinal_probs)
+            if (value_v_a[i_sample] > value_v_b[i_sample] + tolerance_v):
+                value_new_state[3] = 1
+            elif (value_v_a[i_sample] < value_v_b[i_sample] + tolerance_v) and (value_v_a[i_sample] > value_v_b[i_sample] - tolerance_v):
+                value_new_state[3] = 2
+            else:
+                value_new_state[3] = 3
     elif action == space_action[4]:
-        if (value_v_a[i_sample] > value_v_d[i_sample] + tolerance_v):
-            ordinal_probs[0] = 1.0 - ordinal_error
-        elif (value_v_a[i_sample] < value_v_d[i_sample] + tolerance_v) and (value_v_a[i_sample] > value_v_d[i_sample] - tolerance_v):
-            ordinal_probs[1] = 1.0 - ordinal_error
+        if is_correct == 0:
+            value_new_state[4] = np.random.choice(ordinal_obs)
         else:
-            ordinal_probs[2] = 1.0 - ordinal_error
-        value_new_state[4] = np.random.choice(ordinal_obs, p=ordinal_probs)
+            if (value_v_a[i_sample] > value_v_d[i_sample] + tolerance_v):
+                value_new_state[4] = 1
+            elif (value_v_a[i_sample] < value_v_d[i_sample] + tolerance_v) and (value_v_a[i_sample] > value_v_d[i_sample] - tolerance_v):
+                value_new_state[4] = 2
+            else:
+                value_new_state[4] = 3
     elif action == space_action[5]:
-        if (value_v_b[i_sample] > value_v_d[i_sample] + tolerance_v):
-            ordinal_probs[0] = 1.0 - ordinal_error
-        elif (value_v_b[i_sample] < value_v_d[i_sample] + tolerance_v) and (value_v_b[i_sample] > value_v_d[i_sample] - tolerance_v):
-            ordinal_probs[1] = 1.0 - ordinal_error
+        if is_correct == 0:
+            value_new_state[5] = np.random.choice(ordinal_obs)
         else:
-            ordinal_probs[2] = 1.0 - ordinal_error
-        value_new_state[5] = np.random.choice(ordinal_obs, p=ordinal_probs)
+            if (value_v_b[i_sample] > value_v_d[i_sample] + tolerance_v):
+                value_new_state[5] = 1
+            elif (value_v_b[i_sample] < value_v_d[i_sample] + tolerance_v) and (value_v_b[i_sample] > value_v_d[i_sample] - tolerance_v):
+                value_new_state[5] = 2
+            else:
+                value_new_state[5] = 3
     else:
-        value_new_state = value_state[current_s]
+        value_new_state = np.array(value_state[current_s])
 
     new_state =  int(value_new_state[0]*4**5 + value_new_state[1]*4**4 +
                   value_new_state[2]*4**3 + value_new_state[3]*4**2 +
@@ -723,3 +735,5 @@ plt.xlabel("Probability of ordinal error")
 plt.ylabel("Proportion of all choices")
 plt.title('Proportion of choices whit Decoy close to B')
 plt.show(fig2)
+
+

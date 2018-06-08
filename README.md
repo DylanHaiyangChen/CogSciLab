@@ -33,4 +33,5 @@ Result of the proportion of choices during testing with the probability of ordin
 .[2] [The Effect of Expected Value on Attraction Effect Preference Reversals](http://onlinelibrary.wiley.com/doi/10.1002/bdm.2001/full)
 
 Projects
+
  [dennybritz/reinforcement-learning](https://github.com/dennybritz/reinforcement-learning)

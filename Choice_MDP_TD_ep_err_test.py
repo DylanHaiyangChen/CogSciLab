@@ -3,15 +3,11 @@ import itertools
 import matplotlib
 import numpy as np
 import sys
-
 #if "../" not in sys.path:
-#  sys.path.append("../")
 
-#from lib import plotting
 from collections import defaultdict
 from scipy.stats import beta
 from scipy.stats import t
-#from lib import plotting
 import matplotlib.pyplot as plt
 from graphviz import Digraph
 matplotlib.style.use('ggplot')
@@ -645,9 +641,9 @@ def q_learning(num_episodes, discount_factor=0.9, alpha=0.1, ordinal_error = 0.0
     return Q  
 
 
-err_num = 6
-test_num = 20
-ordinal_err = np.linspace(0.5, 1.0, err_num)
+err_num = 11
+test_num = 30
+ordinal_err = np.linspace(0.0, 1.0, err_num)
 proportions_DB = np.zeros((11, num_action))
 rootstate = 0
 value_rootstate = np.array(value_state[rootstate])
@@ -724,7 +720,7 @@ plt.errorbar(ordinal_err + axis_control*2, mean_choice_D_DA, yerr=Confidence_Int
 plt.legend(loc='best', frameon=False)
 plt.xlabel("Probability of ordinal error")
 plt.ylabel("Proportion of all choices")
-plt.title('Proportion of choices whit Decoy close to A')
+plt.title('Proportion of choices with Decoy close to A')
 plt.show(fig1)
 fig2 = plt.figure(2)
 plt.errorbar(ordinal_err, mean_choice_A_DB, yerr=Confidence_Intervals_choice_A_DB, ecolor = 'g', fmt='g-o', label = 'Competitor(A)')
@@ -733,7 +729,7 @@ plt.errorbar(ordinal_err + axis_control*2, mean_choice_D_DB, yerr=Confidence_Int
 plt.legend(loc='best', frameon=False)
 plt.xlabel("Probability of ordinal error")
 plt.ylabel("Proportion of all choices")
-plt.title('Proportion of choices whit Decoy close to B')
+plt.title('Proportion of choices with Decoy close to B')
 plt.show(fig2)
 
 

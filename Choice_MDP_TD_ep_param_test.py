@@ -12,7 +12,7 @@ matplotlib.style.use('ggplot')
 
 num_action = 9
 num_state_elements = 6    #num_state_elements = 6
-num_state = 2**num_state_elements     #num_state = 100
+num_state = 4**num_state_elements     #num_state = 100
 value_state = defaultdict(lambda: np.zeros(num_state_elements))
 space_action = range(num_action)
 
@@ -644,7 +644,7 @@ df = 100
 err_num = np.size(scale) * np.size(location)
 
 test_num = 30
-ordinal_err = np.ones(err_num) * 0.3
+ordinal_err = np.ones(err_num) * 0.0
 #ordinal_err = np.linspace(0.0, 0.5, err_num)
 proportions_DB = np.zeros((11, num_action))
 rootstate = 0
@@ -677,7 +677,7 @@ for i_sca in range(np.size(scale)):
 
         for i_model in range(test_num):
             i_err = i_loc + np.size(location)*i_sca
-            Q = q_learning(num_episodes = 1, ordinal_error = ordinal_err[i_err], location = location[i_loc], scale = scale[i_sca])
+            Q = q_learning(num_episodes = 1000, ordinal_error = ordinal_err[i_err], location = location[i_loc], scale = scale[i_sca])
             #plotting.plot_episode_stats(stats)
             model_accuracy_DA[i_model], model_choice_DA[i_model], test_rational_choice_DA[i_model], model_t_lengths_DA[i_model] = test_accuracy(
                 Q, 0, statis0, ordinal_error = ordinal_err[i_err], location = location[i_loc], scale = scale[i_sca])
@@ -691,14 +691,14 @@ for i_sca in range(np.size(scale)):
         model_choice_B_DB[i_err] = [model_choice_DB[i][1] for i in range(test_num)]
         model_choice_D_DB[i_err] = [model_choice_DB[i][2] for i in range(test_num)]
 
-print("model_choice_A_DA=", model_choice_A_DA)
-print("model_choice_B_DA=", model_choice_B_DA)
-print("model_choice_D_DA=", model_choice_D_DA)
-print("model_choice_A_DB=", model_choice_A_DB)
-print("model_choice_B_DB=", model_choice_B_DB)
-print("model_choice_D_DB=", model_choice_D_DB)
-print("ordinal_err=",ordinal_err)
-'''
+print("model_choice_A_DA:", model_choice_A_DA)
+print("model_choice_B_DA:", model_choice_B_DA)
+print("model_choice_D_DA:", model_choice_D_DA)
+print("model_choice_A_DB:", model_choice_A_DB)
+print("model_choice_B_DB:", model_choice_B_DB)
+print("model_choice_D_DB:", model_choice_D_DB)
+print("ordinal_err:",ordinal_err)
+
 fig1 = plt.figure(1)
 axis_control = np.ones(np.size(location)) * 0.5
 for i_sca in range(np.size(scale)):
@@ -742,4 +742,3 @@ plt.xlabel("Location(mean) of value distribution")
 plt.ylabel("Proportion of all choices")
 plt.title('Proportion of choices with Decoy close to A')
 plt.show(fig2)
-'''

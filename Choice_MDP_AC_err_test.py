@@ -3,6 +3,8 @@ import itertools
 import matplotlib
 import numpy as np
 import sys
+import tensorflow as tf
+import collections
 from collections import defaultdict
 from scipy.stats import beta
 from scipy.stats import t
@@ -19,7 +21,7 @@ space_action = range(num_action)
 train_size = 1
 num_size = 1000
 window_num = 100
-#guass_mu, guass_sigma = 3, 2 #   3, 2; 100, 5mean and standard deviation
+guass_mu, guass_sigma = 3, 2 #   3, 2; 100, 5mean and standard deviation
 #beta_a, beta_b=  2, 2
 beta_a, beta_b=  1, 1
 location = 19.60
@@ -41,7 +43,6 @@ for i_pa in range(0, 4):
                         value_state[index_state][4] = i_pd
                         value_state[index_state][5] = i_vd
                         
-#print("value_state:",value_state, value_state[2][5])
 
 
 dtA = Digraph('Decision_TreeA', filename='dtA.gv')
@@ -454,25 +455,6 @@ def Env_calculate_transition_prob(i_sample, current_s, action, ordinal_error,
     return new_state, reward, is_done
 
 
-def make_epsilon_greedy_policy(Q, nA):
-    def policy_fn(observation, epsilon):
-        #'''
-        A = np.ones(nA, dtype=float) * epsilon / nA
-        best_action = np.argmax(Q[observation])
-        A[best_action] += (1.0 - epsilon)
-        return A
-        #'''
-        '''
-        value_current_state = np.array(value_state[observation])
-        available_action = [ac for ac in range(num_state_elements) if value_current_state[ac] == 0] + [6, 7, 8]
-        nA = len(available_action)
-        A = np.zeros(num_action)
-        A[available_action] = np.ones(nA, dtype=float) * epsilon / nA
-        best_action = np.argmax(Q[observation])
-        A[best_action] += (1.0 - epsilon)
-        return A
-        '''
-    return policy_fn
 
 def GenerateData(decoy):
     is_mached = False
@@ -501,7 +483,7 @@ def GenerateData(decoy):
             else:
                 is_mached = False
 
-def test_accuracy(Q, decoy, statis, ordinal_error):
+def test_accuracy(estimator_policy, decoy, statis, ordinal_error):
     test_size = 100
     test_v_a = np.zeros(test_size)
     test_v_b = np.zeros(test_size)
@@ -536,8 +518,7 @@ def test_accuracy(Q, decoy, statis, ordinal_error):
         statis = statis.Update(value_new_state, action)                        
         for t in itertools.count():
 
-            policy = make_epsilon_greedy_policy(Q, num_action) 
-            action_probs = policy(state, 0.0)
+            action_probs = estimator_policy.predict(state)
             action = np.random.choice(np.arange(len(action_probs)), p=action_probs)
             next_state, reward, done =  Env_calculate_transition_prob(i_test, state, action, ordinal_error,
             test_v_a, test_v_b, test_v_d, test_p_a, test_p_b, test_p_d)
@@ -576,25 +557,107 @@ def test_accuracy(Q, decoy, statis, ordinal_error):
     return choice_accuracy, choice_calculate, rational_choice, episode_lengths
 
 
-def q_learning(num_episodes, discount_factor=0.9, alpha=0.1, ordinal_error = 0.0, 
-               epsilon_start=1.0, epsilon_end=0.05, epsilon_decay_steps=500):
+class PolicyEstimator():
+    """
+    Policy Function approximator. 
+    """
     
-    Q = defaultdict(lambda: np.zeros(num_action))
+    def __init__(self, learning_rate=0.01, scope="policy_estimator"):
+        with tf.variable_scope(scope):
+            self.state = tf.placeholder(tf.int32, [], "state")
+            self.action = tf.placeholder(dtype=tf.int32, name="action")
+            self.target = tf.placeholder(dtype=tf.float32, name="target")
 
-    # The epsilon decay schedule
-    epsilons = np.linspace(epsilon_start, epsilon_end, epsilon_decay_steps)
-    policy = make_epsilon_greedy_policy(Q, num_action)
-    epsilon = epsilon_start
+            # This is just table lookup estimator
+            state_one_hot = tf.one_hot(self.state, int(num_state))
+            self.output_layer = tf.contrib.layers.fully_connected(
+                inputs=tf.expand_dims(state_one_hot, 0),
+                num_outputs=num_action,
+                activation_fn=None,
+                weights_initializer=tf.zeros_initializer)
 
+            self.action_probs = tf.squeeze(tf.nn.softmax(self.output_layer))
+            self.picked_action_prob = tf.gather(self.action_probs, self.action)
+
+            # Loss and train op
+            self.loss = -tf.log(self.picked_action_prob) * self.target
+
+            self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+            self.train_op = self.optimizer.minimize(
+                self.loss, global_step=tf.contrib.framework.get_global_step())
+    
+    def predict(self, state, sess=None):
+        sess = sess or tf.get_default_session()
+        return sess.run(self.action_probs, { self.state: state })
+
+    def update(self, state, target, action, sess=None):
+        sess = sess or tf.get_default_session()
+        feed_dict = { self.state: state, self.target: target, self.action: action  }
+        _, loss = sess.run([self.train_op, self.loss], feed_dict)
+        return loss
+
+
+class ValueEstimator():
+    """
+    Value Function approximator. 
+    """
+    
+    def __init__(self, learning_rate=0.1, scope="value_estimator"):
+        with tf.variable_scope(scope):
+            self.state = tf.placeholder(tf.int32, [], "state")
+            self.target = tf.placeholder(dtype=tf.float32, name="target")
+
+            # This is just table lookup estimator
+            state_one_hot = tf.one_hot(self.state, int(num_state))
+            self.output_layer = tf.contrib.layers.fully_connected(
+                inputs=tf.expand_dims(state_one_hot, 0),
+                num_outputs=1,
+                activation_fn=None,
+                weights_initializer=tf.zeros_initializer)
+
+            self.value_estimate = tf.squeeze(self.output_layer)
+            self.loss = tf.squared_difference(self.value_estimate, self.target)
+
+            self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+            self.train_op = self.optimizer.minimize(
+                self.loss, global_step=tf.contrib.framework.get_global_step())        
+    
+    def predict(self, state, sess=None):
+        sess = sess or tf.get_default_session()
+        return sess.run(self.value_estimate, { self.state: state })
+
+    def update(self, state, target, sess=None):
+        sess = sess or tf.get_default_session()
+        feed_dict = { self.state: state, self.target: target }
+        _, loss = sess.run([self.train_op, self.loss], feed_dict)
+        return loss
+
+
+def actor_critic(estimator_policy, estimator_value, num_episodes, discount_factor=1.0,
+    ordinal_error = 0.0):
+    """
+    Actor Critic Algorithm. Optimizes the policy 
+    function approximator using policy gradient.
+    
+    Args:
+        env: OpenAI environment.
+        estimator_policy: Policy Function to be optimized 
+        estimator_value: Value function approximator, used as a critic
+        num_episodes: Number of episodes to run for
+        discount_factor: Time-discount factor
+    
+    Returns:
+        An EpisodeStats object with two numpy arrays for episode_lengths and episode_rewards.
+    """
+  
+    Transition = collections.namedtuple("Transition", ["state", "action", "reward", "next_state", "done"])
+    
     for i_episode in range(num_episodes):
 
         from scipy.stats import t
         value_v_a = t.rvs(df, location, scale, num_size)
         value_v_b = t.rvs(df, location, scale, num_size)
         value_v_d = t.rvs(df, location, scale, num_size) 
-        #value_v_a = np.random.normal(guass_mu, guass_sigma, num_size)
-        #value_v_b = np.random.normal(guass_mu, guass_sigma, num_size)
-        #value_v_d = np.random.normal(guass_mu, guass_sigma, num_size)
         value_p_a = np.random.beta(beta_a, beta_b,num_size)
         value_p_b = np.random.beta(beta_a, beta_b,num_size)
         value_p_d = np.random.beta(beta_a, beta_b,num_size)
@@ -613,36 +676,57 @@ def q_learning(num_episodes, discount_factor=0.9, alpha=0.1, ordinal_error = 0.0
         t_length = 0
 
         for i_sample in range(num_size):
-
+            # Reset the environment and pick the fisrst action
             state = 0
             max_EV[i_sample] = np.max([value_e_a[i_sample], value_e_b[i_sample], value_e_d[i_sample]])
 
+            episode = []
+
+            # One step in the environment
             for t_length in itertools.count():
 
-                # Epsilon for this time step
-                epsilon = epsilons[min(i_episode, epsilon_decay_steps-1)]
-                action_probs = policy(state, epsilon)
+                # Take a step
+                action_probs = estimator_policy.predict(state)
                 action = np.random.choice(np.arange(len(action_probs)), p=action_probs)
                 next_state, reward, done =  Env_calculate_transition_prob(i_sample, state, action, ordinal_error,
                     value_v_a, value_v_b, value_v_d, value_p_a, value_p_b, value_p_d)
-               
-                best_next_action = np.argmax(Q[next_state])
-                td_target = reward + discount_factor * Q[next_state][best_next_action]                
-                td_delta = td_target - Q[state][action]
-                #print(td_delta)
-                Q[state][action] += alpha * td_delta
-                
+
+                # Keep track of the transition
+                episode.append(Transition(
+                  state=state, action=action, reward=reward, next_state=next_state, done=done))
+
+                # Calculate TD Target
+                value_next = estimator_value.predict(next_state)
+                td_target = reward + discount_factor * value_next
+                td_error = td_target - estimator_value.predict(state)
+
+                # Update the value estimator
+                estimator_value.update(state, td_target)
+
+                # Update the policy estimator
+                # using the td error as our advantage estimate
+                estimator_policy.update(state, td_error, action)
+
+                # Print out which step we're on, useful for debugging.
+                #print("\rStep {} @ Episode {}/{} ({})".format(
+                        #t, i_episode + 1, num_episodes, stats.episode_rewards[i_episode - 1]), end="")
+
                 if done or t_length == 10:
                     break
 
-                state = next_state                 
-    return Q  
+                state = next_state
+    return state
 
+
+tf.reset_default_graph()
+
+global_step = tf.Variable(0, name="global_step", trainable=False)
+policy_estimator = PolicyEstimator()
+value_estimator = ValueEstimator()
 
 err_num = 11
 test_num = 30
 ordinal_err = np.linspace(0.0, 1.0, err_num)
-proportions_DB = np.zeros((11, num_action))
 rootstate = 0
 value_rootstate = np.array(value_state[rootstate])
 rootstatis0 = CalculateNode(state=value_rootstate)
@@ -655,34 +739,37 @@ model_choice_D_DA = np.zeros((err_num, test_num))
 model_choice_A_DB = np.zeros((err_num, test_num))
 model_choice_B_DB = np.zeros((err_num, test_num))
 model_choice_D_DB = np.zeros((err_num, test_num))
-for i_err in range(err_num):
-    if (i_err + 1) % 1 == 0:
-        print("\ri_err {}/{}.".format(i_err + 1, err_num), end="") 
-    
-    model_accuracy_DA = np.zeros(test_num)
-    model_accuracy_DB = np.zeros(test_num)
-    model_choice_DA = np.zeros((test_num, 3))
-    model_choice_DB = np.zeros((test_num, 3))
-    model_t_lengths_DA = np.zeros(test_num)
-    model_t_lengths_DB = np.zeros(test_num)
-    test_rational_choice_DA = np.zeros((test_num, 3))
-    test_rational_choice_DB = np.zeros((test_num, 3))
 
-    proportions_DA = np.zeros((11, num_action))
+with tf.Session() as sess:
 
-    for i_model in range(test_num):
-                   
-        Q = q_learning(num_episodes = 1000, ordinal_error = ordinal_err[i_err])
-        #plotting.plot_episode_stats(stats)
-        model_accuracy_DA[i_model], model_choice_DA[i_model], test_rational_choice_DA[i_model], model_t_lengths_DA[i_model] = test_accuracy(Q, 0, statis0, ordinal_error = ordinal_err[i_err])
-        model_accuracy_DB[i_model], model_choice_DB[i_model], test_rational_choice_DB[i_model], model_t_lengths_DB[i_model] = test_accuracy(Q, 1, statis1, ordinal_error = ordinal_err[i_err])
+    sess.run(tf.initialize_all_variables())
+    # Note, due to randomness in the policy the number of episodes you need to learn a good
+    # policy may vary. ~300 seemed to work well for me.
+    for i_err in range(err_num):
+        if (i_err + 1) % 1 == 0:
+            print("\ri_err {}/{}.".format(i_err + 1, err_num), end="") 
+        
+        model_accuracy_DA = np.zeros(test_num)
+        model_accuracy_DB = np.zeros(test_num)
+        model_choice_DA = np.zeros((test_num, 3))
+        model_choice_DB = np.zeros((test_num, 3))
+        model_t_lengths_DA = np.zeros(test_num)
+        model_t_lengths_DB = np.zeros(test_num)
+        test_rational_choice_DA = np.zeros((test_num, 3))
+        test_rational_choice_DB = np.zeros((test_num, 3))
 
-    model_choice_A_DA[i_err] = [model_choice_DA[i][0] for i in range(test_num)]
-    model_choice_B_DA[i_err] = [model_choice_DA[i][1] for i in range(test_num)]
-    model_choice_D_DA[i_err] = [model_choice_DA[i][2] for i in range(test_num)]
-    model_choice_A_DB[i_err] = [model_choice_DB[i][0] for i in range(test_num)]
-    model_choice_B_DB[i_err] = [model_choice_DB[i][1] for i in range(test_num)]
-    model_choice_D_DB[i_err] = [model_choice_DB[i][2] for i in range(test_num)]
+        for i_model in range(test_num):
+
+            stats = actor_critic(policy_estimator, value_estimator, 160, discount_factor=1.0)
+            model_accuracy_DA[i_model], model_choice_DA[i_model], test_rational_choice_DA[i_model], model_t_lengths_DA[i_model] = test_accuracy(policy_estimator, 0, statis0, ordinal_error = ordinal_err[i_err])
+            model_accuracy_DB[i_model], model_choice_DB[i_model], test_rational_choice_DB[i_model], model_t_lengths_DB[i_model] = test_accuracy(policy_estimator, 1, statis1, ordinal_error = ordinal_err[i_err])
+        
+        model_choice_A_DA[i_err] = [model_choice_DA[i][0] for i in range(test_num)]
+        model_choice_B_DA[i_err] = [model_choice_DA[i][1] for i in range(test_num)]
+        model_choice_D_DA[i_err] = [model_choice_DA[i][2] for i in range(test_num)]
+        model_choice_A_DB[i_err] = [model_choice_DB[i][0] for i in range(test_num)]
+        model_choice_B_DB[i_err] = [model_choice_DB[i][1] for i in range(test_num)]
+        model_choice_D_DB[i_err] = [model_choice_DB[i][2] for i in range(test_num)]
 
 print(model_choice_A_DA)
 print(model_choice_B_DA)
@@ -729,5 +816,3 @@ plt.xlabel("Probability of ordinal error")
 plt.ylabel("Proportion of all choices")
 plt.title('Proportion of choices with Decoy close to B')
 plt.show(fig2)
-
-

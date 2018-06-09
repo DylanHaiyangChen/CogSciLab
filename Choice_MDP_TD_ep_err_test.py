@@ -4,14 +4,14 @@ import matplotlib
 import numpy as np
 import sys
 
-if "../" not in sys.path:
-  sys.path.append("../")
+#if "../" not in sys.path:
+#  sys.path.append("../")
 
-from lib import plotting
+#from lib import plotting
 from collections import defaultdict
 from scipy.stats import beta
 from scipy.stats import t
-from lib import plotting
+#from lib import plotting
 import matplotlib.pyplot as plt
 from graphviz import Digraph
 matplotlib.style.use('ggplot')

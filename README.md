@@ -1,7 +1,7 @@
 # CogSciLab
 Explore human decision making with Artificial Intelligence approach
 
-[Report](https://www.overleaf.com/16918333ygqwsgsnddfm)
+[Detailed Report](https://www.overleaf.com/16918333ygqwsgsnddfm)
 ## Introduction
 
 There is a very interesting phenomenon that people's preference changed by adding a third alternative. It has been a evidence to against the opinion that human decision making is irrational. However, recent study [1], [2] show that human decision making is optimal. In this project, we will try to underlie information processing mechanisms in the human decision making task and find the way to help people make better decisions.

@@ -724,8 +724,10 @@ global_step = tf.Variable(0, name="global_step", trainable=False)
 policy_estimator = PolicyEstimator()
 value_estimator = ValueEstimator()
 
-err_num = 11
-test_num = 30
+err_num = 6
+test_num = 6
+#ordinal_err = np.array([0.1, 0.0])
+#ordinal_err = np.array([1.0, 0.8, 0.6, 0.4, 0.3, 0.2, 0.1, 0.0])
 ordinal_err = np.linspace(0.0, 1.0, err_num)
 rootstate = 0
 value_rootstate = np.array(value_state[rootstate])
@@ -742,9 +744,6 @@ model_choice_D_DB = np.zeros((err_num, test_num))
 
 with tf.Session() as sess:
 
-    sess.run(tf.initialize_all_variables())
-    # Note, due to randomness in the policy the number of episodes you need to learn a good
-    # policy may vary. ~300 seemed to work well for me.
     for i_err in range(err_num):
         if (i_err + 1) % 1 == 0:
             print("\ri_err {}/{}.".format(i_err + 1, err_num), end="") 
@@ -759,7 +758,7 @@ with tf.Session() as sess:
         test_rational_choice_DB = np.zeros((test_num, 3))
 
         for i_model in range(test_num):
-
+            sess.run(tf.initialize_all_variables())
             stats = actor_critic(policy_estimator, value_estimator, 160, discount_factor=1.0)
             model_accuracy_DA[i_model], model_choice_DA[i_model], test_rational_choice_DA[i_model], model_t_lengths_DA[i_model] = test_accuracy(policy_estimator, 0, statis0, ordinal_error = ordinal_err[i_err])
             model_accuracy_DB[i_model], model_choice_DB[i_model], test_rational_choice_DB[i_model], model_t_lengths_DB[i_model] = test_accuracy(policy_estimator, 1, statis1, ordinal_error = ordinal_err[i_err])
@@ -803,6 +802,7 @@ plt.errorbar(ordinal_err, mean_choice_A_DA, yerr=Confidence_Intervals_choice_A_D
 plt.errorbar(ordinal_err + axis_control, mean_choice_B_DA, yerr=Confidence_Intervals_choice_B_DA, ecolor = 'b', fmt='b-o', label = 'Competitor(B)')
 plt.errorbar(ordinal_err + axis_control*2, mean_choice_D_DA, yerr=Confidence_Intervals_choice_D_DA, ecolor = 'r', fmt='r-o', label = 'Decoy(D)')
 plt.legend(loc='best', frameon=False)
+plt.axis([1.0,0,0,1.0])
 plt.xlabel("Probability of ordinal error")
 plt.ylabel("Proportion of all choices")
 plt.title('Proportion of choices with Decoy close to A')
@@ -811,6 +811,7 @@ fig2 = plt.figure(2)
 plt.errorbar(ordinal_err, mean_choice_A_DB, yerr=Confidence_Intervals_choice_A_DB, ecolor = 'g', fmt='g-o', label = 'Competitor(A)')
 plt.errorbar(ordinal_err + axis_control, mean_choice_B_DB, yerr=Confidence_Intervals_choice_B_DB, ecolor = 'b', fmt='b-o', label = 'Target(B)')
 plt.errorbar(ordinal_err + axis_control*2, mean_choice_D_DB, yerr=Confidence_Intervals_choice_D_DB, ecolor = 'r', fmt='r-o', label = 'Decoy(D)')
+plt.axis([1.0,0,0,1.0])
 plt.legend(loc='best', frameon=False)
 plt.xlabel("Probability of ordinal error")
 plt.ylabel("Proportion of all choices")

@@ -11,11 +11,12 @@ from lib import plotting
 from collections import defaultdict
 from scipy.stats import beta
 from scipy.stats import t
+from random import shuffle
 from lib import plotting
 import matplotlib.pyplot as plt
 matplotlib.style.use('ggplot')
 
-num_action = 12
+num_action = 13
 #num_state_elements = 6    #num_state_elements = 6
 #num_state = 2**num_state_elements     #num_state = 100
 #value_state = defaultdict(lambda: np.zeros(num_state_elements))
@@ -33,7 +34,7 @@ df = 100
 
 
 def Env_calculate_transition_prob(i_sample, current_s, action, ordinal_error,
-    value_v_a, value_v_b, value_v_d, value_p_a, value_p_b, value_p_d):
+    value_v_a, value_v_b, value_v_d, value_p_a, value_p_b, value_p_d, present_order, current_order):
     tolerance_p = 0.011
     #tolerance_v = 8.8
     tolerance_v = 1.1
@@ -47,7 +48,8 @@ def Env_calculate_transition_prob(i_sample, current_s, action, ordinal_error,
     ordinal_probs = np.array([ordinal_error, 1 - ordinal_error])
     ordinal_obs = np.array([1, 2, 3])
     is_correct = np.random.choice(np.array([0, 1]), p=ordinal_probs)
-    if action == space_action[0]:
+
+    if action == space_action[0] and value_new_state[9]!=0 and value_new_state[10]!=0:
         if is_correct == 0:
             value_new_state[0] = np.random.choice(ordinal_obs)
         else:
@@ -57,7 +59,7 @@ def Env_calculate_transition_prob(i_sample, current_s, action, ordinal_error,
                 value_new_state[0] = 2
             else:
                 value_new_state[0] = 3
-    elif action == space_action[1]:
+    elif action == space_action[1] and value_new_state[9]!=0 and value_new_state[11]!=0:
         if is_correct == 0:
             value_new_state[1] = np.random.choice(ordinal_obs)
         else:
@@ -67,7 +69,7 @@ def Env_calculate_transition_prob(i_sample, current_s, action, ordinal_error,
                 value_new_state[1] = 2
             else:
                 value_new_state[1] = 3
-    elif action == space_action[2]:
+    elif action == space_action[2] and value_new_state[10]!=0 and value_new_state[11]!=0:
         if is_correct == 0:
             value_new_state[2] = np.random.choice(ordinal_obs)
         else:
@@ -77,7 +79,7 @@ def Env_calculate_transition_prob(i_sample, current_s, action, ordinal_error,
                 value_new_state[2] = 2
             else:
                 value_new_state[2] = 3
-    elif action == space_action[3]:
+    elif action == space_action[3] and value_new_state[9]!=0 and value_new_state[10]!=0:
         if is_correct == 0:
             value_new_state[3] = np.random.choice(ordinal_obs)
         else:
@@ -87,7 +89,7 @@ def Env_calculate_transition_prob(i_sample, current_s, action, ordinal_error,
                 value_new_state[3] = 2
             else:
                 value_new_state[3] = 3
-    elif action == space_action[4]:
+    elif action == space_action[4] and value_new_state[9]!=0 and value_new_state[11]!=0:
         if is_correct == 0:
             value_new_state[4] = np.random.choice(ordinal_obs)
         else:
@@ -97,7 +99,7 @@ def Env_calculate_transition_prob(i_sample, current_s, action, ordinal_error,
                 value_new_state[4] = 2
             else:
                 value_new_state[4] = 3
-    elif action == space_action[5]:
+    elif action == space_action[5] and value_new_state[10]!=0 and value_new_state[11]!=0:
         if is_correct == 0:
             value_new_state[5] = np.random.choice(ordinal_obs)
         else:
@@ -107,12 +109,21 @@ def Env_calculate_transition_prob(i_sample, current_s, action, ordinal_error,
                 value_new_state[5] = 2
             else:
                 value_new_state[5] = 3
-    elif action == space_action[9]:
+    elif action == space_action[9] and value_new_state[9]!=0:
         value_new_state[6] = np.around(value_p_a[i_sample] * value_v_a[i_sample] + calculate_noise)
-    elif action == space_action[10]:
+    elif action == space_action[10] and value_new_state[10]!=0:
         value_new_state[7] = np.around(value_p_b[i_sample] * value_v_b[i_sample] + calculate_noise)
-    elif action == space_action[11]:
-        value_new_state[8] = np.around(value_p_d[i_sample] * value_v_d[i_sample] + calculate_noise)   
+    elif action == space_action[11] and value_new_state[11]!=0:
+        value_new_state[8] = np.around(value_p_d[i_sample] * value_v_d[i_sample] + calculate_noise)
+    elif action == space_action[12]:       
+        if current_order >= 3:
+            current_order = 3
+        else:
+            current_order += 1
+        idx1 = np.where(present_order == current_order)
+        int_idx1 = int(idx1[0]) + 9 
+        value_new_state[int_idx1] = int(present_order[int(idx1[0])])  # value_new_state[int_idx1] = current_order
+
     else:
         value_new_state = np.array(current_s)
 
@@ -142,7 +153,7 @@ def Env_calculate_transition_prob(i_sample, current_s, action, ordinal_error,
         reward = -1
     
     #reward = 100.0 if (new_state == num_state - 1) else -1.0
-    return tuple(value_new_state), reward, is_done
+    return tuple(value_new_state), reward, is_done, current_order
 
 
 def make_epsilon_greedy_policy(Q, nA):
@@ -217,16 +228,20 @@ def test_accuracy(ordinal_error):
     rational_choice = np.zeros(3)
     #test_size = len(test_v_a)
     for i_test in range(test_size):
-        state = (0, 0, 0, 0, 0, 0, 0, 0, 0)
+        state = (0, 0, 0, 0, 0, 0, -100, -100, -100, 0, 0, 0)
         done = 0
-        action = 0       
+        action = 0      
+        current_order = 0
+        present_order = [i for i in np.array([1,2,3])]
+        shuffle(present_order)
+        present_order = np.array(present_order)
         for t in itertools.count():
 
             policy = make_epsilon_greedy_policy(Q, num_action) 
             action_probs = policy(state, 0.0)
             action = np.random.choice(np.arange(len(action_probs)), p=action_probs)
-            next_state, reward, done =  Env_calculate_transition_prob(i_test, state, action, ordinal_error,
-            test_v_a, test_v_b, test_v_d, test_p_a, test_p_b, test_p_d)
+            next_state, reward, done, current_order =  Env_calculate_transition_prob(i_test, state, action, ordinal_error,
+            test_v_a, test_v_b, test_v_d, test_p_a, test_p_b, test_p_d, present_order, current_order)
             calculative_reward += reward
 
             if done or t == 10:
@@ -307,6 +322,8 @@ def q_learning(num_episodes, discount_factor=0.9, alpha=0.1, ordinal_error = 0.5
         value_e_b = value_p_b * value_v_b
         value_e_d = value_p_d * value_v_d
         max_EV = np.zeros(num_size)
+
+
             
         if (i_episode + 1) % 100 == 0:
             print("\rEpisodes {}/{}.".format(i_episode + 1, num_episodes), end="")
@@ -315,7 +332,11 @@ def q_learning(num_episodes, discount_factor=0.9, alpha=0.1, ordinal_error = 0.5
 
         for i_sample in range(num_size):
 
-            state = (0, 0, 0, 0, 0, 0, 0, 0, 0)
+            state = (0, 0, 0, 0, 0, 0, -100, -100, -100, 0, 0, 0)
+            present_order = [i for i in np.array([1,2,3])]
+            current_order = 0
+            shuffle(present_order)
+            present_order = np.array(present_order)
             max_EV[i_sample] = np.max([value_e_a[i_sample], value_e_b[i_sample], value_e_d[i_sample]])
 
             for t_length in itertools.count():
@@ -324,8 +345,8 @@ def q_learning(num_episodes, discount_factor=0.9, alpha=0.1, ordinal_error = 0.5
                 epsilon = epsilons[min(i_episode, epsilon_decay_steps-1)]
                 action_probs = policy(state, epsilon)
                 action = np.random.choice(np.arange(len(action_probs)), p=action_probs)
-                next_state, reward, done =  Env_calculate_transition_prob(i_sample, state, action, ordinal_error,
-                    value_v_a, value_v_b, value_v_d, value_p_a, value_p_b, value_p_d)
+                next_state, reward, done, current_order =  Env_calculate_transition_prob(i_sample, state, action, ordinal_error,
+                    value_v_a, value_v_b, value_v_d, value_p_a, value_p_b, value_p_d, present_order, current_order)
 
                 # Update statistics
                 stats.episode_rewards[i_episode] += reward
@@ -336,7 +357,7 @@ def q_learning(num_episodes, discount_factor=0.9, alpha=0.1, ordinal_error = 0.5
                 #print(td_delta)
                 Q[state][action] += alpha * td_delta
                 
-                if done or t_length == 13:
+                if done or t_length >= 20:
                     stats.episode_lengths[i_episode] += t_length + 1
                     break
 
@@ -351,12 +372,12 @@ def q_learning(num_episodes, discount_factor=0.9, alpha=0.1, ordinal_error = 0.5
                                 
 Q = defaultdict(lambda: np.zeros(num_action))
 
-stats = q_learning(num_episodes = 6000)
+stats = q_learning(num_episodes = 1000)
 
 print("r0 d0.9 e0.1 a0.1 allrondom")
 print(len(Q))    
 plotting.plot_episode_stats(stats)
 
-#print(Q)
+print(Q)
 
 

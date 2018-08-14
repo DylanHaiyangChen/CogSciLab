@@ -246,7 +246,7 @@ def test_accuracy(ordinal_error):
             test_v_a, test_v_b, test_v_d, test_p_a, test_p_b, test_p_d, present_order, current_order)
             calculative_reward += reward
 
-            if done or t == 10:
+            if done or t >= 20:
                 break
         
             state = next_state

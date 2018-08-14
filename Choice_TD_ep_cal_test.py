@@ -24,7 +24,7 @@ space_action = range(num_action)
 train_size = 1
 num_size = 1000
 window_num = 100
-guass_mu, guass_sigma = 0, 1 #   3, 2; 100, 5mean and standard deviation
+guass_mu, guass_sigma = 0, 2 #   3, 2; 100, 5mean and standard deviation
 #beta_a, beta_b=  2, 2
 beta_a, beta_b=  1, 1
 location = 19.60
@@ -88,11 +88,11 @@ def Env_calculate_transition_prob(i_sample, current_s, action,
             value_new_state[5] = 3
     '''
     if action == space_action[0]:
-        value_new_state[0] = round(value_p_a[i_sample] * value_v_a[i_sample]) + calculate_noise
+        value_new_state[0] = round(value_p_a[i_sample] * value_v_a[i_sample] + calculate_noise)
     elif action == space_action[1]:
-        value_new_state[1] = round(value_p_b[i_sample] * value_v_b[i_sample]) + calculate_noise
+        value_new_state[1] = round(value_p_b[i_sample] * value_v_b[i_sample] + calculate_noise)
     elif action == space_action[2]:
-        value_new_state[2] = round(value_p_d[i_sample] * value_v_d[i_sample]) + calculate_noise
+        value_new_state[2] = round(value_p_d[i_sample] * value_v_d[i_sample] + calculate_noise)
     else:
         value_new_state = np.array(current_s)
 
